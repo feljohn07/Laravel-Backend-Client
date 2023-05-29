@@ -1,9 +1,8 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
 import FormModal from '../components/FormModal'
-import { Button } from 'react-bootstrap'
+import { Button, Placeholder } from 'react-bootstrap'
 import axios from 'axios'
-
 
 const CreateForm = (props) => {
     
@@ -36,7 +35,7 @@ const CreateForm = (props) => {
         const newSupplier = { ...form }
         console.log("form create", newSupplier)
 
-        await axios.post("http://127.0.0.1:8000/api/supplier", {
+        await axios.post(`${process.env.REACT_APP_URL}supplier`, {
             name: form.name,
             address: form.address,
         })
@@ -169,7 +168,7 @@ const UpdateForm = (props) => {
             
             setFormLoading(true)
 
-            const response = await axios.get(`http://127.0.0.1:8000/api/supplier/${id}`)
+            const response = await axios.get(`${process.env.REACT_APP_URL}supplier/${id}`)
 
             console.log(response)
 
@@ -211,7 +210,7 @@ const UpdateForm = (props) => {
         // When a post request is sent to the create url, we'll add a new record to the database.
         const updateSupplier = { ...form }
 
-        await axios.put(`http://127.0.0.1:8000/api/supplier/${props.id}`, {
+        await axios.post(`${process.env.REACT_APP_URL}supplier/${props.id}`, {
             name: form.name,
             address: form.address,
         })
@@ -306,12 +305,12 @@ const UpdateForm = (props) => {
 const DeleteConfirm = (props) => {
 
     const [ isSubmitting, setIsSubmitting ] = useState(false)
-
+    
     async function deleteSupplier() {
 
         setIsSubmitting(true)
 
-        const response = await axios.delete(`http://127.0.0.1:8000/api/supplier/${props.id}`)
+        const response = await axios.delete(`${process.env.REACT_APP_URL}supplier/${props.id}`)
         console.log("responese", response)
         props.handleClose()
         props.getSuppliers()
@@ -338,7 +337,7 @@ const DeleteConfirm = (props) => {
                     variant="danger" 
                     onClick={ ()=> deleteSupplier() }
                 >
-                    { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Delete Supplier"}
+                    { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Delete Costumer"}
                 </Button>
             </div>
 
@@ -406,7 +405,7 @@ export default function Supplier() {
 
     async function getSuppliers() {
 
-        const response = await fetch(`http://127.0.0.1:8000/api/supplier?limit=${limit}&page=${page}&query=${query}`)
+        const response = await fetch(`${process.env.REACT_APP_URL}supplier?limit=${limit}&page=${page}&query=${query}`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)

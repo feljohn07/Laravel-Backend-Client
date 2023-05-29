@@ -18,21 +18,19 @@ const dateFormat = (date) => {
 export const CreateForm = (props) => {
     
     const [ form, setForm ] = useState({
-        "product": null || props.id,
-        "customer": null,
+        "product_id": null || props.id,
+        "customer_id": null,
         "order_price": "" || props.retail_price,
         "order_quantity": "",
         "order_date": "",
-        "createdAt": "",
     })
     
     const [ errors, setErrors ] = useState({
-        "product": null,
-        "customer": null,
+        "product_id": null,
+        "customer_id": null,
         "order_price": "",
         "order_quantity": "",
         "order_date": "",
-        "createdAt": "",
     })
     
     const [ customer, setCustomer ] = useState([])
@@ -59,7 +57,7 @@ export const CreateForm = (props) => {
 
         console.log("form create", newOrder)
     
-        await fetch("http://localhost:5000/order/add", {
+        await fetch(`${process.env.REACT_APP_URL}order/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -94,22 +92,19 @@ export const CreateForm = (props) => {
 
             }else if(status == 400){
 
-                let error = json.error
-                let errors = error?.errors
-                let message = error?.message
-                let name = error?.name
+                let error = json?.data
 
                 alert("oh no! An error Occured.")
                 console.log("Errors", errors )
 
                 setErrors({ 
                     ...errors, 
-                    product: errors?.product?.kind,
-                    customer: errors?.customer?.kind,
-                    order_price: errors?.order_price?.kind,
-                    order_quantity: errors?.order_quantity?.kind,
-                    order_date: errors?.order_date?.kind,
-                    createdAt: errors?.createdAt?.kind,
+                    product: error?.product_id[0],
+                    customer: error?.customer_id[0],
+                    order_price: error?.order_price[0],
+                    order_quantity: error?.order_quantity[0],
+                    order_date: error?.order_date[0],
+                    createdAt: error?.createdAt[0],
                     message: name
                 })
                 setIsSubmitting(false)
@@ -125,7 +120,7 @@ export const CreateForm = (props) => {
     
     const getCustomers = async (inputValue) => {
 
-        const response = await fetch(`http://localhost:5000/customer`)
+        const response = await fetch(`${process.env.REACT_APP_URL}customer`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
@@ -134,7 +129,7 @@ export const CreateForm = (props) => {
 
         const result = await response.json()
 
-        var customers = result.customers
+        var customers = result.data.data
 
         setCustomer(customers)
         console.log("customer list result", result)
@@ -142,7 +137,7 @@ export const CreateForm = (props) => {
         let options = []
 
         await customers.map((customer) => {
-            options.push( {value: customer._id, label: customer.customer_name} )
+            options.push( {value: customer.id, label: customer.name} )
         })
 
         console.log(options)
@@ -176,14 +171,14 @@ export const CreateForm = (props) => {
                             <input
                                 disabled="true"
                                 type="text"
-                                className= { errors?.product != "required" ? "form-control" : "form-control is-invalid"} 
+                                className= { errors?.product_id != "required" ? "form-control" : "form-control is-invalid"} 
                                 id="product"
-                                value={form.product}
+                                value={form.product_id}
                                 autocomplete="off"
-                                onChange={(e) => updateForm({ product: e.target.value })}
+                                onChange={(e) => updateForm({ product_id: e.target.value })}
                             />
                             <div class="invalid-feedback">
-                                { errors.product }
+                                { errors.product_id }
                             </div>
                         </div>
 
@@ -213,7 +208,7 @@ export const CreateForm = (props) => {
                         <div className="form-group mb-3">
                             <label htmlFor="customer">Customer</label>
                             <AsyncCreatableSelect 
-                                onChange={ (e)=> setForm( {...form, customer: e.value }) } 
+                                onChange={ (e)=> setForm( {...form, customer_id: e.value }) } 
                                 cacheOptions
                                 defaultOptions
                                 loadOptions={ promiseOptions }
@@ -317,7 +312,7 @@ const UpdateForm = (props) => {
         async function fetchData() {
             
             setFormLoading(true)
-            const response = await fetch(`http://localhost:5000/order/${id}`)
+            const response = await fetch(`${process.env.REACT_APP_URL}order/${id}`)
         
             if (!response.ok) {
                 const message = `An error has occurred: ${response.statusText}`
@@ -336,7 +331,7 @@ const UpdateForm = (props) => {
 
             console.log("Update form", order)
         
-            setForm(order)
+            setForm(order.data)
             setFormLoading(false)
             console.log("form", form)
         }
@@ -355,7 +350,7 @@ const UpdateForm = (props) => {
         // When a post request is sent to the create url, we'll add a new record to the database.
         const updateCustomer = { ...form }
     
-        await fetch(`http://localhost:5000/order/update/${props.id}`, {
+        await fetch(`${process.env.REACT_APP_URL}order/${props.id}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -367,7 +362,7 @@ const UpdateForm = (props) => {
             return
         });
     
-        setForm({ order_price: "", order_price: "" })
+        setForm({})
         props.handleClose()
         props.getOrders()
     }
@@ -385,9 +380,9 @@ const UpdateForm = (props) => {
                                 type="text"
                                 className={ formLoading ? "form-control placeholder col-4" : 'form-control' }
                                 id="product"
-                                value={form.product}
+                                value={form.product_id}
                                 autocomplete="off"
-                                onChange={(e) => updateForm({ product: e.target.value })}
+                                onChange={(e) => updateForm({ product_id: e.target.value })}
                             />
                         </div>
                         <div className="form-group mb-3">
@@ -397,9 +392,9 @@ const UpdateForm = (props) => {
                                 type="text"
                                 className={ formLoading ? "form-control placeholder col-4" : 'form-control' }
                                 id="customer"
-                                value={form.customer}
+                                value={form.customer_id}
                                 autocomplete="off"
-                                onChange={(e) => updateForm({ customer: e.target.value })}
+                                onChange={(e) => updateForm({ customer_id: e.target.value })}
                             />
                         </div>
                         <div className="form-group mb-3">
@@ -465,7 +460,7 @@ const DeleteConfirm = (props) => {
 
         setIsSubmitting(true)
 
-        await fetch(`http://localhost:5000/order/delete/${props.id}`, {
+        await fetch(`${process.env.REACT_APP_URL}order/${props.id}`, {
             method: "DELETE"
         })
         props.handleClose()
@@ -512,7 +507,8 @@ export default function Order(props) {
     const [ limit, setLimit ] = useState(10)
     const [ numOfPages, setNumOfPages ] = useState(0)
     const [ numOfRecords, setNumOfRecords ] = useState(0)
-    const [ page, setPage ] = useState(0)
+    const [ page, setPage ] = useState(1)
+    const [ query, setQuery ] = useState("")
 
     // TABLE ARRAY
     const [ orders, setOrders ] = useState([])
@@ -530,46 +526,46 @@ export default function Order(props) {
     }
 
     // These methods will update the state properties.
-    async function searchTable(event) {
+    // async function searchTable(event) {
 
-        let query = event.target.value
-        let key = event.key
+    //     let query = event.target.value
+    //     let key = event.key
 
-        if(
-            key === "Enter" ||
-            key === "Space"
-        ) {
+    //     if(
+    //         key === "Enter" ||
+    //         key === "Space"
+    //     ) {
 
-            setIsLoading(true)
+    //         setIsLoading(true)
 
-            const response = await fetch(`http://localhost:5000/order?limit=${limit}&page=${page}&query=${query}`)
-            if (!response.ok) {
-                const message = `An error occurred: ${response.statusText}`
-                window.alert(message)
-                return
-            }
+    //         const response = await fetch(`${process.env.REACT_APP_URL}order?limit=${limit}&page=${page}&query=${query}`)
+    //         if (!response.ok) {
+    //             const message = `An error occurred: ${response.statusText}`
+    //             window.alert(message)
+    //             return
+    //         }
     
-            const result = await response.json()
+    //         const result = await response.json()
     
-            var orders = result.orders
-            var numOfPages = result.numOfPages
-            var numOfRecords = result.numOfRecords
+    //         var orders = result.orders
+    //         var numOfPages = result.numOfPages
+    //         var numOfRecords = result.numOfRecords
             
-            setOrders(orders)
-            setNumOfPages(numOfPages)
-            setNumOfRecords(numOfRecords)
-            setIsLoading(false)
+    //         setOrders(orders)
+    //         setNumOfPages(numOfPages)
+    //         setNumOfRecords(numOfRecords)
+    //         setIsLoading(false)
 
     
-            // switch to first page
-            setPage(0)
+    //         // switch to first page
+    //         setPage(0)
             
     
-            console.log("result", result)
-            console.log(query)
-        }
+    //         console.log("result", result)
+    //         console.log(query)
+    //     }
    
-    }
+    // }
 
     const selectLimit = (value) => {
 
@@ -582,7 +578,7 @@ export default function Order(props) {
 
     async function getOrders() {
 
-        const response = await fetch(`http://localhost:5000/order?limit=${limit}&page=${page}&product_id=${props.product_id ? props.product_id : ""}`)
+        const response = await fetch(`${process.env.REACT_APP_URL}order?limit=${limit}&page=${page}&query=${query}`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
@@ -591,9 +587,11 @@ export default function Order(props) {
 
         const result = await response.json()
 
-        var orders = result.orders
-        var numOfPages = result.numOfPages
-        var numOfRecords = result.numOfRecords
+        console.log(result)
+
+        var orders = result.data.data
+        var numOfPages = result.data.last_page
+        var numOfRecords = result.data.total
         
         setOrders(orders)
         setNumOfPages(numOfPages)
@@ -659,7 +657,7 @@ export default function Order(props) {
                             <div class="col-md-6">
                                 <div class="text-md-end dataTables_filter" id="dataTable_filter">
                                     <label class="form-label">
-                                        <input disabled="true" type="search" /* onChange={ (e) => searchTable(e.target.value) }  */ onKeyDown={ (e) => searchTable(e) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/>
+                                        {/*<input disabled="true" type="search" onChange={ (e) => searchTable(e.target.value) } onKeyDown={ (e) => searchTable(e) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/> */}
                                     </label>
                                 </div>
                             </div>
@@ -682,23 +680,22 @@ export default function Order(props) {
                                     {   
                                         orders.map((order, index) => {
                                             return (
-                                                <tr key={order._id}>
+                                                <tr key={order.id}>
                                                     <th>{ index + 1 }</th>
                                                     <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ order?.product?.product_name }</span></td>
-                                                    <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ order?.customer?.customer_name }</span></td>
+                                                    <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ order?.customer?.name }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ order?.order_price }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ order?.order_quantity }</span></td>
                                                     <td>{ dateFormat( order?.order_date ) }</td>
-                                                    <td>{ dateFormat( order?.createdAt ) }</td>
+                                                    <td>{ dateFormat( order?.created_at ) }</td>
                                                     
-
                                                     <td>
                                                         <button 
                                                             className="btn btn-warning btn-sm me-3" 
                                                             onClick={
                                                                 () => handleShow(
                                                                     <UpdateForm 
-                                                                        id = {order._id}
+                                                                        id = {order.id}
                                                                         handleClose = { handleClose }
                                                                         getOrders = { getOrders }
                                                                     />
@@ -709,7 +706,7 @@ export default function Order(props) {
                                                         <button className="btn btn-outline-danger btn-sm"
                                                             onClick={() => handleShow(
                                                                 <DeleteConfirm
-                                                                    id = {order._id}
+                                                                    id = {order.id}
                                                                     handleClose = { handleClose }
                                                                     getOrders = { getOrders }
                                                                 />
@@ -728,23 +725,23 @@ export default function Order(props) {
                             <div class="col">
                                 <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
                                     <ul class="pagination">
-                                        <li class={ "page-item page-link " + ( page == 0 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
+                                        <li class={ "page-item page-link " + ( page == 1 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
 
                                         {( () => {
                                             const arr = [];
-                                            for (let i = 0; i < numOfPages; i++) {
+                                            for (let i = 1; i <= numOfPages; i++) {
 
                                                 if( i == page ){
-                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }else{
-                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }
 
                                             }
                                             return arr;
                                         }) ()}
 
-                                        <li class={ "page-item page-link " + ( page >= (numOfPages - 1) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
+                                        <li class={ "page-item page-link " + ( page >= (numOfPages) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
                                     </ul>
                                 </nav>
                             </div>

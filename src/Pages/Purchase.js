@@ -18,21 +18,19 @@ const dateFormat = (date) => {
 export const CreateForm = (props) => {
     
     const [ form, setForm ] = useState({
-        "product": null || props.id,
-        "supplier": null,
+        "product_id": null || props.id,
+        "supplier_id": null,
         "purchase_price": "",
         "purchase_quantity": "",
         "purchase_date": "",
-        "createdAt": "",
     })
     
     const [ errors, setErrors ] = useState({
-        "product": null,
-        "supplier": null,
+        "product_id": null,
+        "supplier_id": null,
         "purchase_price": "",
         "purchase_quantity": "",
         "purchase_date": "",
-        "createdAt": "",
     })
 
     const [ suppliers, setSuppliers ] = useState([])
@@ -60,7 +58,7 @@ export const CreateForm = (props) => {
 
         console.log("form create", newPurchase)
     
-        await fetch("http://localhost:5000/purchase/add", {
+        await fetch(`${process.env.REACT_APP_URL}purchase/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -69,8 +67,8 @@ export const CreateForm = (props) => {
         })
         .then( async ( response )=> {
 
-            let status = response.status
             let json = await response.json()
+            let status = json.status
 
             if(status == 200){
 
@@ -95,23 +93,24 @@ export const CreateForm = (props) => {
 
             }else if(status == 400){
 
-                let error = json.error
-                let errors = error?.errors
-                let message = error?.message
-                let name = error?.name
+                let error = json?.data
 
                 alert("oh no! An error Occured.")
-                console.log("Errors", errors )
+                console.log("Errors", error )
+
+                // name: error?.name !== undefined ? error?.name[0] : "",
+                // address: error?.address !== undefined ? error?.address[0] : "",
+                // message: json.message
 
                 setErrors({ 
                     ...errors, 
-                    product: errors?.product?.kind,
-                    supplier: errors?.supplier?.kind,
-                    purchase_price: errors?.purchase_price?.kind,
-                    purchase_quantity: errors?.purchase_quantity?.kind,
-                    purchase_date: errors?.purchase_date?.kind,
-                    createdAt: errors?.createdAt?.kind,
-                    message: name
+                    product: error?.product_id[0],
+                    supplier: error?.supplier_id[0],
+                    purchase_price: error?.purchase_price[0],
+                    purchase_quantity: error?.purchase_quantity[0],
+                    purchase_date: error?.purchase_date[0],
+                    createdAt: error?.createdAt[0],
+                    message: json.message
                 })
                 setIsSubmitting(false)
             }
@@ -125,16 +124,19 @@ export const CreateForm = (props) => {
 
     const getSuppliers = async (inputValue) => {
 
-        const response = await fetch(`http://localhost:5000/supplier`)
+        const response = await fetch(`${process.env.REACT_APP_URL}purchase-suppliers`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
             return
         }
-
+        
         const result = await response.json()
 
-        var suppliers = result.suppliers
+        console.log(result.data)
+
+
+        var suppliers = result.data
 
         setSuppliers(suppliers)
         // console.log("supplier list result", result)
@@ -142,7 +144,7 @@ export const CreateForm = (props) => {
         let options = []
 
         await suppliers.map((supplier) => {
-            options.push( {value: supplier._id, label: `${supplier.supplier_name} [${supplier.supplier_address}]`} )
+            options.push( {value: supplier.id, label: `${supplier.name} [${supplier.address}]`} )
         })
 
         console.log(options)
@@ -212,7 +214,7 @@ export const CreateForm = (props) => {
                         <div className="form-group mb-3">
                             <label htmlFor="supplier">Supplier</label>
                             <AsyncCreatableSelect
-                                onChange={ (e)=> setForm( {...form, supplier: e.value }) } 
+                                onChange={ (e)=> setForm( {...form, supplier_id: e.value }) } 
                                 cacheOptions
                                 defaultOptions
                                 loadOptions={ promiseOptions }
@@ -236,7 +238,7 @@ export const CreateForm = (props) => {
                         </div> */}
 
                         <div className="form-group mb-3">
-                            <label htmlFor="purchase_price"> <span className='fw-bold'>Purchase Price</span> | Retail Price: <span class="badge bg-info"> {props.retail_price}</span></label>
+                            <label htmlFor="purchase_price"> <span className='fw-bold'>Wholesale Price Price</span> | Retail Price: <span class="badge bg-info"> {props.retail_price}</span></label>
                             <input
                                 type="number"
                                 className= { errors?.purchase_price != "required" ? "form-control" : "form-control is-invalid"} 
@@ -289,9 +291,11 @@ export const CreateForm = (props) => {
 const UpdateForm = (props) => {
     
     const [form, setForm] = useState({
-        purchase_price: "",
-        purchase_price: "",
-        purchases: []
+        "product_id": null,
+        "supplier_id": null,
+        "purchase_price": "",
+        "purchase_quantity": "",
+        "purchase_date": "",
     })
 
     const [ formLoading, setFormLoading ] = useState(false)
@@ -311,7 +315,9 @@ const UpdateForm = (props) => {
         async function fetchData() {
             
             setFormLoading(true)
-            const response = await fetch(`http://localhost:5000/purchase/${id}`)
+            const response = await fetch(`${process.env.REACT_APP_URL}purchase/${id}`)
+
+            console.log(response)
         
             if (!response.ok) {
                 const message = `An error has occurred: ${response.statusText}`
@@ -329,7 +335,7 @@ const UpdateForm = (props) => {
 
             console.log("Update form", purchase)
         
-            setForm(purchase)
+            setForm(purchase.data)
             setFormLoading(false)
             console.log("form", form)
         }
@@ -348,7 +354,7 @@ const UpdateForm = (props) => {
         // When a post request is sent to the create url, we'll add a new record to the database.
         const updatePurchase = { ...form }
     
-        await fetch(`http://localhost:5000/purchase/update/${props.id}`, {
+        await fetch(`${process.env.REACT_APP_URL}purchase/${props.id}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -383,9 +389,9 @@ const UpdateForm = (props) => {
                                 type="text"
                                 className={ formLoading ? "form-control placeholder col-4" : 'form-control' }
                                 id="product"
-                                value={form.product}
+                                value={form.product_id}
                                 autocomplete="off"
-                                onChange={(e) => updateForm({ product: e.target.value })}
+                                onChange={(e) => updateForm({ product_id: e.target.value })}
                             />
                         </div>
                         <div className="form-group mb-3">
@@ -395,9 +401,9 @@ const UpdateForm = (props) => {
                                 type="text"
                                 className={ formLoading ? "form-control placeholder col-4" : 'form-control' }
                                 id="supplier"
-                                value={form.supplier}
+                                value={form.supplier_id}
                                 autocomplete="off"
-                                onChange={(e) => updateForm({ supplier: e.target.value })}
+                                onChange={(e) => updateForm({ supplier_id: e.target.value })}
                             />
                         </div>
                         <div className="form-group mb-3">
@@ -463,7 +469,7 @@ const DeleteConfirm = (props) => {
 
         setIsSubmitting(true)
 
-        await fetch(`http://localhost:5000/purchase/delete/${props.id}`, {
+        await fetch(`${process.env.REACT_APP_URL}purchase/${props.id}`, {
             method: "DELETE"
         })
         props.handleClose()
@@ -514,7 +520,9 @@ export default function Purchase(props) {
     const [ limit, setLimit ] = useState(10)
     const [ numOfPages, setNumOfPages ] = useState(0)
     const [ numOfRecords, setNumOfRecords ] = useState(0)
-    const [ page, setPage ] = useState(0)
+    const [ page, setPage ] = useState(1)
+    const [ query, setQuery ] = useState("")
+
 
     // TABLE ARRAY
     const [ purchases, setPurchases ] = useState([])
@@ -532,46 +540,46 @@ export default function Purchase(props) {
     }
 
     // These methods will update the state properties.
-    async function searchTable(event) {
+    // async function searchTable(event) {
 
-        let query = event.target.value
-        let key = event.key
+    //     let query = event.target.value
+    //     let key = event.key
 
-        if(
-            key === "Enter" ||
-            key === "Space"
-        ) {
+    //     if(
+    //         key === "Enter" ||
+    //         key === "Space"
+    //     ) {
 
-            setIsLoading(true)
+    //         setIsLoading(true)
 
-            const response = await fetch(`http://localhost:5000/purchase?limit=${limit}&page=${page}&query=${query}`)
-            if (!response.ok) {
-                const message = `An error occurred: ${response.statusText}`
-                window.alert(message)
-                return
-            }
+    //         const response = await fetch(`${process.env.REACT_APP_URL}purchase?limit=${limit}&page=${page}&query=${query}`)
+    //         if (!response.ok) {
+    //             const message = `An error occurred: ${response.statusText}`
+    //             window.alert(message)
+    //             return
+    //         }
     
-            const result = await response.json()
+    //         const result = await response.json()
     
-            var purchases = result.purchases
-            var numOfPages = result.numOfPages
-            var numOfRecords = result.numOfRecords
+    //         var purchases = result.purchases
+    //         var numOfPages = result.numOfPages
+    //         var numOfRecords = result.numOfRecords
             
-            setPurchases(purchases)
-            setNumOfPages(numOfPages)
-            setNumOfRecords(numOfRecords)
-            setIsLoading(false)
+    //         setPurchases(purchases)
+    //         setNumOfPages(numOfPages)
+    //         setNumOfRecords(numOfRecords)
+    //         setIsLoading(false)
 
     
-            // switch to first page
-            setPage(0)
+    //         // switch to first page
+    //         setPage(0)
             
     
-            console.log("result", result)
-            console.log(query)
-        }
+    //         console.log("result", result)
+    //         console.log(query)
+    //     }
    
-    }
+    // }
 
     const selectLimit = (value) => {
 
@@ -579,12 +587,12 @@ export default function Purchase(props) {
         setLimit(value)
 
         // switch to first page
-        setPage(0)
+        setPage(1)
     }
 
     async function getPurchases() {
 
-        const response = await fetch(`http://localhost:5000/purchase?limit=${limit}&page=${page}&product_id=${props.product_id ? props.product_id : ""}`)
+        const response = await fetch(`${process.env.REACT_APP_URL}purchase?limit=${limit}&page=${page}&query=${query}`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
@@ -593,13 +601,13 @@ export default function Purchase(props) {
 
         const result = await response.json()
 
-        var purchases = result.purchases
-        var numOfPages = result.numOfPages
-        var numOfRecords = result.numOfRecords
+        var purchases = result.data.data
+        var numOfPages = result.data.last_page
+        var numOfRecords = result.data.total
         
         setPurchases(purchases)
         setNumOfPages(numOfPages)
-        setNumOfRecords(numOfRecords)
+        setNumOfRecords(numOfRecords)   
 
         console.log("result", result)
 
@@ -660,7 +668,7 @@ export default function Purchase(props) {
                             <div class="col-md-6">
                                 <div class="text-md-end dataTables_filter" id="dataTable_filter">
                                     <label class="form-label">
-                                        <input type="search" /* onChange={ (e) => searchTable(e.target.value) }  */ onKeyDown={ (e) => searchTable(e) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/>
+                                        {/* <input type="search" onChange={ (e) => searchTable(e.target.value) }  onKeyDown={ (e) => searchTable(e) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/> */}
                                     </label>
                                 </div>
                             </div>
@@ -683,14 +691,14 @@ export default function Purchase(props) {
                                     {   
                                         purchases.map((purchase, index) => {
                                             return (
-                                                <tr key={purchase._id}>
+                                                <tr key={purchase.id}>
                                                     <th>{ index + 1 }</th>
                                                     <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ purchase?.product?.product_name }</span></td>
-                                                    <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ purchase?.supplier?.supplier_name }</span></td>
+                                                    <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ purchase?.supplier?.name }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ purchase?.purchase_price }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ purchase?.purchase_quantity }</span></td>
                                                     <td>{ dateFormat( purchase?.purchase_date ) }</td>
-                                                    <td>{ dateFormat( purchase?.createdAt ) }</td>
+                                                    <td>{ dateFormat( purchase?.created_at ) }</td>
                                                     
 
                                                     <td>
@@ -699,7 +707,7 @@ export default function Purchase(props) {
                                                             onClick={
                                                                 () => handleShow(
                                                                     <UpdateForm 
-                                                                        id = {purchase._id}
+                                                                        id = {purchase.id}
                                                                         handleClose = { handleClose }
                                                                         getPurchases = { getPurchases }
                                                                     />
@@ -710,7 +718,7 @@ export default function Purchase(props) {
                                                         <button className="btn btn-outline-danger btn-sm"
                                                             onClick={() => handleShow(
                                                                 <DeleteConfirm
-                                                                    id = {purchase._id}
+                                                                    id = {purchase.id}
                                                                     handleClose = { handleClose }
                                                                     getPurchases = { getPurchases }
                                                                 />
@@ -729,23 +737,23 @@ export default function Purchase(props) {
                             <div class="col">
                                 <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
                                     <ul class="pagination">
-                                        <li class={ "page-item page-link " + ( page == 0 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
+                                        <li class={ "page-item page-link " + ( page == 1 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
 
                                         {( () => {
                                             const arr = [];
-                                            for (let i = 0; i < numOfPages; i++) {
+                                            for (let i = 1; i <= numOfPages; i++) {
 
                                                 if( i == page ){
-                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }else{
-                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }
 
                                             }
                                             return arr;
                                         }) ()}
 
-                                        <li class={ "page-item page-link " + ( page >= (numOfPages - 1) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
+                                        <li class={ "page-item page-link " + ( page >= (numOfPages) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
                                     </ul>
                                 </nav>
                             </div>

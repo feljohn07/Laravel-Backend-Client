@@ -1,8 +1,11 @@
-import React from 'react'
+import React, {useState, useEffect} from 'react'
 import { useAuthContext } from '../Hooks/useAuthContext'
 
 export default function Profile() {
+    
     const { user } = useAuthContext()
+
+    alert(user.email)
 
     return (
         <>

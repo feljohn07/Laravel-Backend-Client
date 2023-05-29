@@ -2,8 +2,8 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 import FormModal from '../components/FormModal'
 import { Button } from 'react-bootstrap'
-import axios from 'axios'
 
+import axios from "axios";
 
 const CreateForm = (props) => {
     
@@ -15,12 +15,14 @@ const CreateForm = (props) => {
     const [ errors, setErrors ] = useState({
         name: "",
         address: "",
+        message:"",
     })
 
     const [ isSubmitting, setIsSubmitting ] = useState(false)
     
     // These methods will update the state properties.
     function updateForm(value) {
+        // console.log(form)
         return setForm((prev) => {
             return { ...prev, ...value }
         })
@@ -36,7 +38,7 @@ const CreateForm = (props) => {
         const newCustomer = { ...form }
         console.log("form create", newCustomer)
 
-        await axios.post("http://127.0.0.1:8000/api/customer", {
+        await axios.post(`${process.env.REACT_APP_URL}customer`, {
             name: form.name,
             address: form.address,
         })
@@ -92,7 +94,7 @@ const CreateForm = (props) => {
 
             <div className='card p-3'>
                 <form id="customer-form" onSubmit={onSubmit}>
-                    <div class={ errors?.message != null ? "alert alert-danger" : "d-none"} role="alert">
+                    <div class={ errors?.message != "" ? "alert alert-danger" : "d-none"} role="alert">
                         Error Message: { errors?.message }
                     </div>
                     <div className="form-group mb-3">
@@ -133,7 +135,7 @@ const CreateForm = (props) => {
                         type="submit"
                         form="customer-form"
                     >
-                        { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Create Customer"}
+                        { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Create Costumer"}
                     </Button>
 
                 </form>
@@ -164,12 +166,12 @@ const UpdateForm = (props) => {
     useEffect(() => {
 
         var id = props.id
-
+        
         async function fetchData() {
             
             setFormLoading(true)
 
-            const response = await axios.get(`http://127.0.0.1:8000/api/customer/${id}`)
+            const response = await axios.get(`${process.env.REACT_APP_URL}customer/${id}`)
 
             console.log(response)
 
@@ -211,7 +213,7 @@ const UpdateForm = (props) => {
         // When a post request is sent to the create url, we'll add a new record to the database.
         const updateCustomer = { ...form }
 
-        await axios.put(`http://127.0.0.1:8000/api/customer/${props.id}`, {
+        await axios.put(`${process.env.REACT_APP_URL}customer/${props.id}`, {
             name: form.name,
             address: form.address,
         })
@@ -252,6 +254,7 @@ const UpdateForm = (props) => {
             return
         })
     }
+
 
     return (
         <>
@@ -311,7 +314,7 @@ const DeleteConfirm = (props) => {
 
         setIsSubmitting(true)
 
-        const response = await axios.delete(`http://127.0.0.1:8000/api/customer/${props.id}`)
+        const response = await axios.delete(`${process.env.REACT_APP_URL}customer/${props.id}`)
         console.log("responese", response)
         props.handleClose()
         props.getCustomers()
@@ -338,7 +341,7 @@ const DeleteConfirm = (props) => {
                     variant="danger" 
                     onClick={ ()=> deleteCustomer() }
                 >
-                    { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Delete Customer"}
+                    { isSubmitting ? <div class="spinner-border spinner-border-sm mx-3" role="status"> <span class="sr-only">Loading...</span> </div> : "Delete Costumer"}
                 </Button>
             </div>
 
@@ -351,12 +354,14 @@ const DeleteConfirm = (props) => {
 
 export default function Customer() {
 
+    const [ selectID, setID ] = useState("")
+
     // PAGINATION
     const [ limit, setLimit ] = useState(10)
     const [ numOfPages, setNumOfPages ] = useState(0)
     const [ numOfRecords, setNumOfRecords ] = useState(0)
     const [ page, setPage ] = useState(1)
-    const [ query, setQuery ] = useState("")
+    const [ query, setQuery] = useState("")
 
     // TABLE ARRAY
     const [ customers, setCustomers ] = useState([])
@@ -400,13 +405,14 @@ export default function Customer() {
 
         // Page number of row displayed
         setLimit(value)
+
         // switch to first page
-        setPage(1)
+        setPage(0)
     }
 
     async function getCustomers() {
-
-        const response = await fetch(`http://127.0.0.1:8000/api/customer?limit=${limit}&page=${page}&query=${query}`)
+        
+        const response = await fetch(`${process.env.REACT_APP_URL}customer?limit=${limit}&page=${page}&query=${query}`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
@@ -421,14 +427,13 @@ export default function Customer() {
         
         setCustomers(customers)
         setNumOfPages(numOfPages)
-        setNumOfRecords(numOfRecords)   
+        setNumOfRecords(numOfRecords)
 
         console.log("result", result)
 
     }
 
     useEffect(() => {
-        // alert(process.env.REACT_APP_URL)
         getCustomers()
     }, [limit, page, query])
 
@@ -441,7 +446,7 @@ export default function Customer() {
     return (
         <>
             <div class="container-fluid">
-                <h3 class="text-dark my-4">Customer's Record <span class="badge bg-secondary">{ numOfRecords }</span></h3>
+                <h3 class="text-dark my-4">Costumer's Record <span class="badge bg-secondary">{ numOfRecords }</span></h3>
                 <div class="card shadow">
 
                     <div class="card-header py-3">
@@ -490,7 +495,6 @@ export default function Customer() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    
                                     {   
                                         customers.map((customer, index) => {
                                             return (
@@ -543,9 +547,9 @@ export default function Customer() {
                                             for (let i = 1; i <= numOfPages; i++) {
 
                                                 if( i == page ){
-                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i}</li>)
+                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }else{
-                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i}</li>)
+                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }
 
                                             }

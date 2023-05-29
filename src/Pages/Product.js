@@ -6,7 +6,7 @@ import { Button } from 'react-bootstrap'
 import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
 
-import { useAuthContext } from '../Hooks/useAuthContext'
+import axios from 'axios'
 
 import Purchase, { CreateForm as PurchaseCreateForm } from './Purchase'
 import Order, { CreateForm as OrderCreateForm } from './Order'
@@ -20,7 +20,11 @@ const CreateForm = (props) => {
         retail_price: "",
     })
     
-    const [ errors, setErrors ] = useState({})
+    const [ errors, setErrors ] = useState({
+        product_name: "",
+        minimum_quantity: "",
+        retail_price: "",
+    })
 
     const [ isSubmitting, setIsSubmitting ] = useState(false)
     
@@ -40,60 +44,58 @@ const CreateForm = (props) => {
     
         // When a post request is sent to the create url, we'll add a new record to the database.
         const newCustomer = { ...form }
-
-        console.log({ form })
-
         console.log("form create", newCustomer)
     
-        await fetch("http://localhost:5000/product/add", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(newCustomer),
+        await axios.post(`${process.env.REACT_APP_URL}product`, {
+            product_name: form.product_name,
+            minimum_quantity: form.minimum_quantity,
+            retail_price: form.retail_price
         })
-        .then( async ( response )=> {
+        .then( async ( response ) => {
 
-            let status = response.status
-            let json = await response.json()
+            let json = response.data
+            let status = json.status
 
             if(status == 200){
 
-                // alert("yey Success!")
-                // console.log("create response ", json)
+                alert("yey Success!")
+                console.log("create response ", json)
 
-                setForm({ 
-                  product_name: "", 
-                  minimum_quantity: "",
-                  retail_price: "",
+                setForm({
+                    product_name: "",
+                    minimum_quantity: "",
+                    retail_price: "",
                 })
-
                 props.handleClose()
                 props.getProducts()
 
             }else if(status == 400){
 
-                let error = json.error
-                let errors = error?.errors
-                let message = error?.message
-                let name = error?.name
+                let error = json.data
 
-                // alert("oh no! An error Occured.")
-                // console.log("Errors", errors )
+                console.log("error", error)
+
+                alert("oh no! An error Occured.")
+                console.log("Errors", errors )
+
+                console.log("create response ", json)
 
                 setErrors({ 
                     ...errors, 
-                    product_name: errors?.product_name?.kind,
-                    minimum_quantity: errors?.minimum_quantity?.kind,
-                    retail_price: errors?.minimum_quantity?.kind,
-                    message: name
+                    product_name: error?.product_name !== undefined ? error?.product_name[0] : "",
+                    minimum_quantity: error?.minimum_quantity !== undefined ? error?.minimum_quantity[0] : "",
+                    retail_price: error?.retail_price !== undefined ? error?.retail_price[0] : "",
+                    message: json.message
                 })
+
+                console.log("Errors", errors )
                 setIsSubmitting(false)
             }
 
         })
         .catch(error => {
             alert("Catch Error: " + error)
+            setIsSubmitting(false)
         })
     
     }
@@ -110,7 +112,7 @@ const CreateForm = (props) => {
                         <label htmlFor="product_name">Product Name</label>
                         <input
                             type="text"
-                            className= { errors?.product_name != "required" ? "form-control" : "form-control is-invalid"} 
+                            className= { errors?.product_name == "" ? "form-control" : "form-control is-invalid"} 
                             id="product_name"
                             value={form.product_name}
                             autocomplete="off"
@@ -124,7 +126,7 @@ const CreateForm = (props) => {
                         <label htmlFor="minimum_quantity">Minimum Quantity</label>
                         <input
                             type="number"
-                            className= { errors?.minimum_quantity != "required" ? "form-control" : "form-control is-invalid"} 
+                            className= { errors?.minimum_quantity == "" ? "form-control" : "form-control is-invalid"} 
                             id="minimum_quantity"
                             value={form.minimum_quantity}
                             autocomplete="off"
@@ -138,7 +140,7 @@ const CreateForm = (props) => {
                         <label htmlFor="retail_price">Retail Price</label>
                         <input
                             type="decimal"
-                            className= { errors?.retail_price != "required" ? "form-control" : "form-control is-invalid"} 
+                            className= { errors?.retail_price == "" ? "form-control" : "form-control is-invalid"} 
                             id="retail_price"
                             value={form.retail_price}
                             autocomplete="off"
@@ -186,6 +188,7 @@ const UpdateForm = (props) => {
             return { ...prev, ...value }
         })
     }
+    
 
     useEffect(() => {
 
@@ -194,16 +197,21 @@ const UpdateForm = (props) => {
         async function fetchData() {
             
             setFormLoading(true)
-            const response = await fetch(`http://localhost:5000/product/${id}`)
+
+            const response = await axios.get(`${process.env.REACT_APP_URL}product/${id}`)
+
+            console.log(response)
         
-            if (!response.ok) {
+            if (!response.status == 200) {
                 const message = `An error has occurred: ${response.statusText}`
                 window.alert(message)
                 console.log(response)
                 return
             }
         
-            const product = await response.json()
+            const product = await response.data.data
+
+            console.log("product", product)
 
             if (!product) {
                 window.alert(`Record with id ${id} not found`)
@@ -229,23 +237,50 @@ const UpdateForm = (props) => {
         setIsSubmitting(true)
     
         // When a post request is sent to the create url, we'll add a new record to the database.
-        const updateCustomer = { ...form }
-    
-        await fetch(`http://localhost:5000/product/update/${props.id}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(updateCustomer),
+        const updateSupplier = { ...form }
+
+        await axios.post(`${process.env.REACT_APP_URL}product/${props.id}`, {
+            product_name: form.product_name,
+            minimum_quantity: form.minimum_quantity,
+            retail_price: form.retail_price,
+        })
+        .then( async ( response ) => {
+        
+            let json = response.data
+            let status = json.status
+            
+            if(status == 200){
+                
+                alert("yey Success!")
+                console.log("update response ", json)
+                
+                setForm({
+                    product_name: "",
+                    minimum_quantity: "",
+                    retail_price: "",
+                })
+
+                props.handleClose()
+                props.getProducts()
+
+            }else if(status == 400){
+
+                let error = json.data
+
+                console.log("error", error)
+
+                alert("oh no! An error Occured.")
+                console.log("Errors", error )
+
+                console.log("update response ", json)
+                
+            }
+        
         })
         .catch(error => {
             window.alert(error)
             return
-        });
-    
-        setForm({ product_name: "", minimum_quantity: "", retail_price: "", })
-        props.handleClose()
-        props.getProducts()
+        })
     }
 
     return (
@@ -317,11 +352,10 @@ const DeleteConfirm = (props) => {
 
         setIsSubmitting(true)
 
-        await fetch(`http://localhost:5000/product/delete/${props.id}`, {
-            method: "DELETE"
-        })
+        const response = await axios.delete(`${process.env.REACT_APP_URL}product/${props.id}`)
+        console.log("responese", response)
         props.handleClose()
-        props.searchTable(props.query)
+        props.getProducts()
 
     }
 
@@ -404,7 +438,7 @@ export default function Product() {
     const [ limit, setLimit ] = useState(10)
     const [ numOfPages, setNumOfPages ] = useState(0)
     const [ numOfRecords, setNumOfRecords ] = useState(0)
-    const [ page, setPage ] = useState(0)
+    const [ page, setPage ] = useState(1)
     const [ query, setQuery ] = useState("")
 
     // TABLE ARRAY
@@ -432,46 +466,39 @@ export default function Product() {
     }
 
     // These methods will update the state properties.
-    async function searchTable(value) {
+    async function searchTable(event) {
 
-        setQuery(value)
+        let query = event.target.value
+        let key = event.key
 
-        const response = await fetch(`http://localhost:5000/product?limit=${limit}&page=${page}&query=${query}`)
-        if (!response.ok) {
-            const message = `An error occurred: ${response.statusText}`
-            window.alert(message)
-            return
+        if(key === "Backspace" && query == ""){
+            setQuery(query)
         }
 
-        const result = await response.json()
+        if(
+            key === "Enter" ||
+            key === "Space"
+        ) {
 
-        var products = result.products
-        var numOfPages = result.numOfPages
-        var numOfRecords = result.numOfRecords
-        
-        setProducts(products)
-        setNumOfPages(numOfPages)
-        setNumOfRecords(numOfRecords)
-
-        // switch to first page
-        setPage(0)
-
-        console.log("result", result)
-        console.log(query)
+            // setIsLoading(true)
+            setQuery(query)
+            // setIsLoading(false)
+            setPage(1)
+            console.log(query)
+        }
     }
 
     const selectLimit = (value) => {
 
         // Page number of row displayed
         setLimit(value)
-
         // switch to first page
-        setPage(0)
+        setPage(1)
     }
 
     async function getProducts() {
 
-        const response = await fetch(`http://localhost:5000/product?limit=${limit}&page=${page}`)
+        const response = await fetch(`${process.env.REACT_APP_URL}product?limit=${limit}&page=${page}&query=${query}`)
         if (!response.ok) {
             const message = `An error occurred: ${response.statusText}`
             window.alert(message)
@@ -480,23 +507,25 @@ export default function Product() {
 
         const result = await response.json()
 
-        var products = result.products
-        var numOfPages = result.numOfPages
-        var numOfRecords = result.numOfRecords
+        var products = result.data.data
+        var numOfPages = result.data.last_page
+        var numOfRecords = result.data.total
         
         setProducts(products)
         setNumOfPages(numOfPages)
-        setNumOfRecords(numOfRecords)
+        setNumOfRecords(numOfRecords)   
 
         console.log("result", result)
 
     }
 
     useEffect(() => {
+        // alert(process.env.REACT_APP_URL)
         getProducts()
-    }, [limit, page])
+    }, [limit, page, query])
 
     const dateFormat = (date) =>{
+
         return new Intl.DateTimeFormat('en-US').format(new Date(date))
     }
 
@@ -538,7 +567,7 @@ export default function Product() {
                             </div>
                             <div class="col-md-6">
                                 <div class="text-md-end dataTables_filter" id="dataTable_filter"><label class="form-label">
-                                <input type="search" /* onChange={ (e) => searchTable(e.target.value) }  */ onKeyUp={ (e) => searchTable(e.target.value) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/></label></div>
+                                <input type="search" /* onChange={ (e) => searchTable(e.target.value) }  */ onKeyUp={ (e) => searchTable(e) } class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"/></label></div>
                             </div>
                         </div>
                         <div class="table-responsive table mt-2 " id="dataTable-1" role="grid" aria-describedby="dataTable_info">
@@ -561,7 +590,7 @@ export default function Product() {
                                     {
                                         products.map((product, index) => {
                                             return (
-                                                <tr key={product?._id}>
+                                                <tr key={product?.id}>
                                                     <th>{ index + 1 }</th>
                                                     <td><span className='d-inline-block text-truncate' style={{minWidth: "200px", maxWidth: "20vw"}}>{ product?.product_name }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ product?.minimum_quantity }</span></td>
@@ -569,7 +598,7 @@ export default function Product() {
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ product?.quantity_on_hand }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ product?.total_purchases }</span></td>
                                                     <td><span className='d-inline-block text-truncate' style={{maxWidth: "20vw"}}>{ product?.total_orders }</span></td>
-                                                    <td>{ dateFormat(product?.createdAt) }</td>
+                                                    <td>{ dateFormat(product?.created_at) }</td>
 
                                                     <td>
 
@@ -579,7 +608,7 @@ export default function Product() {
                                                                 () => {
                                                                     handleFullShow(
                                                                         <ViewProductInfo
-                                                                            id = {product?._id}
+                                                                            id = {product?.id}
                                                                             handleClose = { handleClose }
                                                                             searchTable = { searchTable }
                                                                         />
@@ -593,7 +622,7 @@ export default function Product() {
                                                             onClick={
                                                                 () => handleShow(
                                                                     <UpdateForm 
-                                                                        id = {product?._id}
+                                                                        id = {product?.id}
                                                                         handleClose = { handleClose }
                                                                         getProducts = { getProducts }
                                                                     />
@@ -605,9 +634,10 @@ export default function Product() {
                                                             className="btn btn-danger btn-sm me-2"
                                                             onClick={() => handleShow(
                                                                 <DeleteConfirm
-                                                                    id = {product?._id}
+                                                                    id = {product?.id}
                                                                     handleClose = { handleClose }
-                                                                    searchTable = { searchTable }
+                                                                    getProducts = { getProducts }
+
                                                                 />
                                                             )}
                                                         ><i class="fas fa-trash-alt"></i> <span className='d-none d-md-inline d-lg-inline'>Delete</span> </button>
@@ -618,7 +648,7 @@ export default function Product() {
                                                             className="btn btn-outline-success btn-sm me-1"
                                                             onClick={() => handleShow(
                                                                 <PurchaseCreateForm 
-                                                                    id = {product?._id}
+                                                                    id = {product?.id}
                                                                     product_name = {product?.product_name}
                                                                     retail_price = {product?.retail_price}
                                                                     quantity_on_hand = {product?.quantity_on_hand}
@@ -631,7 +661,7 @@ export default function Product() {
                                                             onClick={() => handleShow(
                                                                 <OrderCreateForm 
                                                                     product_name = {product?.product_name}
-                                                                    id = {product?._id}
+                                                                    id = {product?.id}
                                                                     retail_price = {product?.retail_price}
                                                                     quantity_on_hand = {product?.quantity_on_hand}
                                                                     handleClose = { handleClose }
@@ -652,23 +682,23 @@ export default function Product() {
                             <div class="col">
                                 <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
                                     <ul class="pagination">
-                                        <li class={ "page-item page-link " + ( page == 0 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
+                                        <li class={ "page-item page-link " + ( page == 1 ? "disabled" : "") } onClick={() => setPage((prev) => prev - 1)} role='button'><span aria-hidden="true">«</span></li>
 
                                         {( () => {
                                             const arr = [];
-                                            for (let i = 0; i < numOfPages; i++) {
+                                            for (let i = 1; i <= numOfPages; i++) {
 
                                                 if( i == page ){
-                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link active" onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }else{
-                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i + 1}</li>)
+                                                    arr.push(<li class="page-item page-link " onClick={() => setPage(i)} role='button'>{ i }</li>)
                                                 }
 
                                             }
                                             return arr;
                                         }) ()}
 
-                                        <li class={ "page-item page-link " + ( page >= (numOfPages - 1) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
+                                        <li class={ "page-item page-link " + ( page >= (numOfPages) ? "disabled" : "") } onClick={() => setPage((prev) => prev + 1)} role='button'><span aria-hidden="true">»</span></li>
                                     </ul>
                                 </nav>
                             </div>
